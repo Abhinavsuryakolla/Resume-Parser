@@ -174,6 +174,9 @@ from fpdf import FPDF  # Ensure you have installed fpdf via pip install fpdf
 
 # Load spaCy model for NER, similarity and embeddings
 # Replace the existing spaCy load line
+
+import spacy
+
 try:
     nlp = spacy.load("en_core_web_md")
 except OSError:
