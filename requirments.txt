@@ -1,5 +1,10 @@
-spacy
-en-core-web-sm
-pymupdf
-scikit-learn
-streamlit
+streamlit==1.32.2
+spacy==3.7.4
+PyMuPDF==1.23.28
+python-docx==0.8.11
+geopy==2.4.1
+scikit-learn==1.4.2
+wordcloud==1.9.3
+matplotlib==3.8.4
+fpdf2==2.7.7
+https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.7.0/en_core_web_md-3.7.0-py3-none-any.whl
