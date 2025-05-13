@@ -27,13 +27,12 @@ from docx import Document  # Added DOCX support
 
 @st.cache_resource
 def load_nlp_model():
+    import spacy, subprocess
     try:
         return spacy.load("en_core_web_md")
     except OSError:
         subprocess.run(["python", "-m", "spacy", "download", "en_core_web_md"])
         return spacy.load("en_core_web_md")
-
-
 
 nlp = load_nlp_model()
 
