@@ -24,141 +24,7 @@ from fpdf import FPDF
 from docx import Document  # Added DOCX support
 
 
-def main():
-    st.set_page_config(page_title="AI Resume Analyst", layout="wide")
-    st.title("🚀 AI Resume Analyst 2.0")
-    
-    st.sidebar.header("⚙️ Analysis Settings")
-    st.sidebar.write("Using advanced matching with semantic, TF-IDF, and skills overlap.")
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        uploaded_resumes = st.file_uploader("📁 Upload Resumes (PDF/DOCX)", 
-                                            type=["pdf", "docx"],
-                                            accept_multiple_files=True)
-        
-    with col2:
-        job_description = st.file_uploader("📑 Upload Job Description (for matching)", 
-                                           type=["pdf", "docx"])
-        min_score = st.slider("🔍 Minimum Match Score", 0.0, 1.0, 0.5)
-    
-    parser = EnhancedResumeParser()
-    matcher = AdvancedMatcher()
-    
-    # --- Section 1: Parse Resumes ---
-    if uploaded_resumes:
-        if st.button("📄 Parse Resumes", key="parse_btn"):
-            st.header("📝 Parsed Resume Details")
-            parsed_results = []
-            for resume in uploaded_resumes:
-                resume_text = extract_text(resume)
-                candidate_name = extract_candidate_name(resume_text)
-                skills_data = extract_skills(resume_text)
-                details = {
-                    "Name": candidate_name,
-                    "Experience": parser.extract_experience(resume_text),
-                    "Education": ", ".join(parser.extract_education(resume_text)),
-                    "Skills": ", ".join(skills_data["skills_list"]),
-                    "Categories": ", ".join(skills_data["categories"]),
-                    "Location": parser.extract_location(resume_text)
-                }
-                parsed_results.append(details)
-                st.subheader(candidate_name)
-                st.write(details)
-                # Display the extracted candidate summary as well:
-                st.write("**Candidate Summary:**")
-                st.write(extract_candidate_summary(resume_text))
-            st.success("Resume parsing complete.")
-    
-    # --- Section 2: Match Resumes with Job Description ---
-    if uploaded_resumes and job_description:
-        if st.button("🔍 Match Resumes", key="match_btn"):
-            job_desc_text = extract_text(job_description)
-            results = []
-            for resume in uploaded_resumes:
-                resume_text = extract_text(resume)
-                score = matcher.calculate_similarity(resume_text, job_desc_text)
-                if score >= min_score:
-                    skills_data = extract_skills(resume_text)
-                    results.append({
-                        "name": extract_candidate_name(resume_text),
-                        "score": round(score, 2),
-                        "experience": parser.extract_experience(resume_text),
-                        "education": ", ".join(parser.extract_education(resume_text)),
-                        "skills": ", ".join(skills_data["skills_list"]),
-                        "categories": ", ".join(skills_data["categories"]),
-                        "location": parser.extract_location(resume_text),
-                        "text": resume_text
-                    })
-            
-            # Sort results by descending score
-            results = sorted(results, key=lambda x: x["score"], reverse=True)
-            
-            if results:
-                st.header("📊 Analysis Dashboard")
-                
-                # Global Score Distribution Chart
-                st.subheader("📈 Global Score Distribution")
-                df = pd.DataFrame(results)
-                st.bar_chart(df.set_index("name")["score"])
-                
-                # Display each candidate with separate analysis
-                st.subheader("🏆 Candidate Analyses")
-                for candidate in results:
-                    with st.expander(f"{candidate['name']} - Match Score: {candidate['score']:.0%}"):
-                        st.write(f"**Experience:** {candidate['experience']}")
-                        st.write(f"**Education:** {candidate['education']}")
-                        st.write(f"**Skills:** {candidate['skills']}")
-                        st.write(f"**Categories:** {candidate['categories']}")
-                        st.write(f"**Location:** {candidate['location']}")
-                        
-                        # Candidate-specific Skill Gap Analysis
-                        candidate_skills = set(extract_skills(candidate['text'])["skills_list"])
-                        job_skills = set(extract_skills(job_desc_text)["skills_list"])
-                        missing_skills = job_skills - candidate_skills
-                        st.write("**Skill Gap Analysis:**")
-                        if missing_skills:
-                            st.write(f"Missing Skills: {', '.join(missing_skills)}")
-                        else:
-                            st.write("No missing skills!")
-                        
-                        # Candidate-specific Keyword Comparison
-                        st.write("**Keyword Comparison:**")
-                        col_kw1, col_kw2 = st.columns(2)
-                        with col_kw1:
-                            plot_wordcloud(candidate['text'], f"{candidate['name']} Resume Keywords")
-                        with col_kw2:
-                            plot_wordcloud(job_desc_text, "Job Description Keywords")
-                
-                # Global Analysis Sections (if desired, these remain separate)
-                st.subheader("🔍 Global Skill Gap Analysis")
-                global_job_skills = set(extract_skills(job_desc_text)["skills_list"])
-                all_resume_skills = set().union(*[set(r['skills'].split(", ")) for r in results])
-                global_missing = global_job_skills - all_resume_skills
-                if global_missing:
-                    st.warning(f"Missing skills across all candidates: {', '.join(global_missing)}")
-                else:
-                    st.success("All required skills covered in candidate pool!")
-                
-                st.subheader("📚 Global Keyword Comparison")
-                col_global1, col_global2 = st.columns(2)
-                with col_global1:
-                    plot_wordcloud(job_desc_text, "Job Description Keywords")
-                with col_global2:
-                    plot_wordcloud(" ".join([r["text"] for r in results]), "Combined Resume Keywords")
-                
-                # Data Export Section: Download PDF Report
-                st.subheader("💾 Export Results")
-                if st.button("📥 Download Analysis Report"):
-                    pdf = generate_pdf_report(results)
-                    st.download_button("Download PDF", pdf, file_name="resume_analysis.pdf")
-            else:
-                st.warning("No candidates meet the minimum score criteria.")
-
-if __name__ == "__main__":
-    main()
-
+st.set_page_config(page_title="AI Resume Analyst", layout="wide")
 
 # ---------------------- SPA CY MODEL INITIALIZATION ------------------
 
@@ -614,3 +480,137 @@ def generate_pdf_report(results):
         pdf.ln(5)
     return pdf.output(dest="S").encode("latin1")
     
+def main():
+    st.set_page_config(page_title="AI Resume Analyst", layout="wide")
+    st.title("🚀 AI Resume Analyst 2.0")
+    
+    st.sidebar.header("⚙️ Analysis Settings")
+    st.sidebar.write("Using advanced matching with semantic, TF-IDF, and skills overlap.")
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        uploaded_resumes = st.file_uploader("📁 Upload Resumes (PDF/DOCX)", 
+                                            type=["pdf", "docx"],
+                                            accept_multiple_files=True)
+        
+    with col2:
+        job_description = st.file_uploader("📑 Upload Job Description (for matching)", 
+                                           type=["pdf", "docx"])
+        min_score = st.slider("🔍 Minimum Match Score", 0.0, 1.0, 0.5)
+    
+    parser = EnhancedResumeParser()
+    matcher = AdvancedMatcher()
+    
+    # --- Section 1: Parse Resumes ---
+    if uploaded_resumes:
+        if st.button("📄 Parse Resumes", key="parse_btn"):
+            st.header("📝 Parsed Resume Details")
+            parsed_results = []
+            for resume in uploaded_resumes:
+                resume_text = extract_text(resume)
+                candidate_name = extract_candidate_name(resume_text)
+                skills_data = extract_skills(resume_text)
+                details = {
+                    "Name": candidate_name,
+                    "Experience": parser.extract_experience(resume_text),
+                    "Education": ", ".join(parser.extract_education(resume_text)),
+                    "Skills": ", ".join(skills_data["skills_list"]),
+                    "Categories": ", ".join(skills_data["categories"]),
+                    "Location": parser.extract_location(resume_text)
+                }
+                parsed_results.append(details)
+                st.subheader(candidate_name)
+                st.write(details)
+                # Display the extracted candidate summary as well:
+                st.write("**Candidate Summary:**")
+                st.write(extract_candidate_summary(resume_text))
+            st.success("Resume parsing complete.")
+    
+    # --- Section 2: Match Resumes with Job Description ---
+    if uploaded_resumes and job_description:
+        if st.button("🔍 Match Resumes", key="match_btn"):
+            job_desc_text = extract_text(job_description)
+            results = []
+            for resume in uploaded_resumes:
+                resume_text = extract_text(resume)
+                score = matcher.calculate_similarity(resume_text, job_desc_text)
+                if score >= min_score:
+                    skills_data = extract_skills(resume_text)
+                    results.append({
+                        "name": extract_candidate_name(resume_text),
+                        "score": round(score, 2),
+                        "experience": parser.extract_experience(resume_text),
+                        "education": ", ".join(parser.extract_education(resume_text)),
+                        "skills": ", ".join(skills_data["skills_list"]),
+                        "categories": ", ".join(skills_data["categories"]),
+                        "location": parser.extract_location(resume_text),
+                        "text": resume_text
+                    })
+            
+            # Sort results by descending score
+            results = sorted(results, key=lambda x: x["score"], reverse=True)
+            
+            if results:
+                st.header("📊 Analysis Dashboard")
+                
+                # Global Score Distribution Chart
+                st.subheader("📈 Global Score Distribution")
+                df = pd.DataFrame(results)
+                st.bar_chart(df.set_index("name")["score"])
+                
+                # Display each candidate with separate analysis
+                st.subheader("🏆 Candidate Analyses")
+                for candidate in results:
+                    with st.expander(f"{candidate['name']} - Match Score: {candidate['score']:.0%}"):
+                        st.write(f"**Experience:** {candidate['experience']}")
+                        st.write(f"**Education:** {candidate['education']}")
+                        st.write(f"**Skills:** {candidate['skills']}")
+                        st.write(f"**Categories:** {candidate['categories']}")
+                        st.write(f"**Location:** {candidate['location']}")
+                        
+                        # Candidate-specific Skill Gap Analysis
+                        candidate_skills = set(extract_skills(candidate['text'])["skills_list"])
+                        job_skills = set(extract_skills(job_desc_text)["skills_list"])
+                        missing_skills = job_skills - candidate_skills
+                        st.write("**Skill Gap Analysis:**")
+                        if missing_skills:
+                            st.write(f"Missing Skills: {', '.join(missing_skills)}")
+                        else:
+                            st.write("No missing skills!")
+                        
+                        # Candidate-specific Keyword Comparison
+                        st.write("**Keyword Comparison:**")
+                        col_kw1, col_kw2 = st.columns(2)
+                        with col_kw1:
+                            plot_wordcloud(candidate['text'], f"{candidate['name']} Resume Keywords")
+                        with col_kw2:
+                            plot_wordcloud(job_desc_text, "Job Description Keywords")
+                
+                # Global Analysis Sections (if desired, these remain separate)
+                st.subheader("🔍 Global Skill Gap Analysis")
+                global_job_skills = set(extract_skills(job_desc_text)["skills_list"])
+                all_resume_skills = set().union(*[set(r['skills'].split(", ")) for r in results])
+                global_missing = global_job_skills - all_resume_skills
+                if global_missing:
+                    st.warning(f"Missing skills across all candidates: {', '.join(global_missing)}")
+                else:
+                    st.success("All required skills covered in candidate pool!")
+                
+                st.subheader("📚 Global Keyword Comparison")
+                col_global1, col_global2 = st.columns(2)
+                with col_global1:
+                    plot_wordcloud(job_desc_text, "Job Description Keywords")
+                with col_global2:
+                    plot_wordcloud(" ".join([r["text"] for r in results]), "Combined Resume Keywords")
+                
+                # Data Export Section: Download PDF Report
+                st.subheader("💾 Export Results")
+                if st.button("📥 Download Analysis Report"):
+                    pdf = generate_pdf_report(results)
+                    st.download_button("Download PDF", pdf, file_name="resume_analysis.pdf")
+            else:
+                st.warning("No candidates meet the minimum score criteria.")
+
+if __name__ == "__main__":
+    main()
