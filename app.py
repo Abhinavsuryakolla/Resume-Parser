@@ -158,6 +158,8 @@
 #                 st.write(f"🛠️ Skills: {', '.join(res['skills'])}")
 #                 st.markdown("---")
 
+
+
 import re
 import json
 import spacy
@@ -175,14 +177,38 @@ from fpdf import FPDF  # Ensure you have installed fpdf via pip install fpdf
 # Load spaCy model for NER, similarity and embeddings
 # Replace the existing spaCy load line
 
-import spacy
 
+
+import os
+import sys
+
+# Force install dependencies before anything else
+if "streamlit" in sys.modules:
+    os.system("pip install --upgrade pip")
+    os.system("pip install -r requirements.txt --force-reinstall")
+
+# Verify spaCy installation
+try:
+    import spacy
+except ImportError:
+    os.system("pip install spacy==3.7.4")
+    import spacy
+
+# Verify model installation
 try:
     nlp = spacy.load("en_core_web_md")
 except OSError:
-    from spacy.cli import download
-    download("en_core_web_md")
+    os.system("python -m spacy download en_core_web_md")
     nlp = spacy.load("en_core_web_md")
+
+# import spacy
+
+# try:
+#     nlp = spacy.load("en_core_web_md")
+# except OSError:
+#     from spacy.cli import download
+#     download("en_core_web_md")
+#     nlp = spacy.load("en_core_web_md")
 geolocator = Nominatim(user_agent="resume_parser", timeout=10)
 
 # ------------------------- SKILLS LOADING CODE -------------------------
