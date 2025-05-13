@@ -24,15 +24,16 @@ from fpdf import FPDF
 from docx import Document  # Added DOCX support
 
 # ---------------------- SPA CY MODEL INITIALIZATION ------------------
+
 @st.cache_resource
 def load_nlp_model():
     try:
-        nlp = spacy.load("en_core_web_md")
+        return spacy.load("en_core_web_md")
     except OSError:
-        import subprocess
         subprocess.run(["python", "-m", "spacy", "download", "en_core_web_md"])
-        nlp = spacy.load("en_core_web_md")
-    return nlp
+        return spacy.load("en_core_web_md")
+
+
 
 nlp = load_nlp_model()
 

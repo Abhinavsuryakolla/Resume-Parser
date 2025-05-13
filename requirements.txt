@@ -1,6 +1,5 @@
 streamlit==1.32.2
 spacy==3.7.4
-en-core-web-md==3.7.0
 PyMuPDF>=1.24.0,<1.25.0
 python-docx==0.8.11
 geopy==2.4.1
