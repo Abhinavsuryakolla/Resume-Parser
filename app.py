@@ -23,6 +23,10 @@ from geopy.geocoders import Nominatim
 from fpdf import FPDF
 from docx import Document  # Added DOCX support
 
+
+
+st.set_page_config(page_title="AI Resume Analyst", layout="wide")
+
 # ---------------------- SPA CY MODEL INITIALIZATION ------------------
 
 @st.cache_resource
