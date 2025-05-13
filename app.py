@@ -173,7 +173,13 @@ from geopy.geocoders import Nominatim
 from fpdf import FPDF  # Ensure you have installed fpdf via pip install fpdf
 
 # Load spaCy model for NER, similarity and embeddings
-nlp = spacy.load("en_core_web_md")
+# Replace the existing spaCy load line
+try:
+    nlp = spacy.load("en_core_web_md")
+except OSError:
+    from spacy.cli import download
+    download("en_core_web_md")
+    nlp = spacy.load("en_core_web_md")
 geolocator = Nominatim(user_agent="resume_parser", timeout=10)
 
 # ------------------------- SKILLS LOADING CODE -------------------------
