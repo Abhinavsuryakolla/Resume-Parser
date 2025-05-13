@@ -1,165 +1,13 @@
-# import re
-# import json
-# import spacy
-# import fitz  # PyMuPDF for better PDF parsing
-# import streamlit as st
-# from spacy.matcher import PhraseMatcher
-# from sklearn.feature_extraction.text import TfidfVectorizer
-# from sklearn.metrics.pairwise import cosine_similarity
+# -*- coding: utf-8 -*-
+# ---------------------- DEPENDENCY INSTALLATION ----------------------
+import os
+import sys
 
-# # Load spaCy model
-# nlp = spacy.load("en_core_web_sm")
+if "streamlit" in sys.modules:
+    os.system("pip install --upgrade pip")
+    os.system("pip install -r requirements.txt --force-reinstall --no-cache-dir")
 
-# # Load skills from JSON file safely
-# try:
-#     with open("skills.json", "r", encoding="utf-8") as f:
-#         skill_list = json.load(f)
-# except (FileNotFoundError, json.JSONDecodeError):
-#     skill_list = []
-
-# # Create a PhraseMatcher object for skills
-# phrase_matcher = PhraseMatcher(nlp.vocab)
-# patterns = [nlp(skill) for skill in skill_list]
-# phrase_matcher.add("SKILLS", None, *patterns)
-
-# def extract_name(text):
-#     nlp_text = nlp(text)
-#     for ent in nlp_text.ents:
-#         if ent.label_ == "PERSON":
-#             return ent.text
-#     return "Unknown"
-
-# def get_email_addresses(text):
-#     return re.findall(r'[\w\.-]+@[\w\.-]+', text)
-
-# def get_mobile_numbers(text):
-#     return re.findall(r'\b\d{10}\b', text)
-
-# def extract_skills(text):
-#     doc = nlp(text)
-#     matches = phrase_matcher(doc)
-#     return list({doc[start:end].text for match_id, start, end in matches})
-
-# def extract_experience(text):
-#     return "Experience details extracted (Placeholder)"
-
-# def extract_education(text):
-#     return "Education details extracted (Placeholder)"
-
-# def extract_location(text):
-#     return "Location details extracted (Placeholder)"
-
-# def extract_text(file):
-#     try:
-#         with fitz.open(stream=file.read(), filetype="pdf") as doc:
-#             text = "\n".join([page.get_text("text") for page in doc])
-#         return text if text.strip() else "No text extracted."
-#     except Exception as e:
-#         return f"Error extracting text: {str(e)}"
-
-# def calculate_similarity(resume_text, job_desc_text):
-#     vectorizer = TfidfVectorizer()
-#     tfidf_matrix = vectorizer.fit_transform([resume_text, job_desc_text])
-#     similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])
-#     return similarity[0][0]
-
-# # Streamlit UI
-# st.set_page_config(page_title="Resume Parser", layout="wide")
-# st.title("📄 Resume Parser & Job Description Matcher")
-
-# st.markdown("""
-# <style>
-#     .stApp {
-#         background-color: #f5f7fa;
-#     }
-#     div.stButton > button:first-child {
-#         background-color: #4CAF50;
-#         color: white;
-#         font-size: 16px;
-#     }
-#     div.stButton > button:first-child:hover {
-#         background-color: #45a049;
-#     }
-# </style>
-# """, unsafe_allow_html=True)
-
-# col1, col2 = st.columns(2)
-
-# with col1:
-#     st.subheader("📂 Upload Resume(s)")
-#     uploaded_resumes = st.file_uploader("Upload one or multiple resumes in PDF format.", type=["pdf"], accept_multiple_files=True, key="resume")
-
-# with col2:
-#     st.subheader("📜 Upload Job Description")
-#     job_description = st.file_uploader("Upload a job description.", type=["pdf"], key="job")
-
-# st.markdown("---")
-
-# if "parsed_data" not in st.session_state:
-#     st.session_state.parsed_data = []
-
-# data = st.session_state.parsed_data
-
-# if st.button("🔍 Parse Resumes"):
-#     st.session_state.parsed_data = []  # Clear old data
-#     for resume in uploaded_resumes:
-#         resume_text = extract_text(resume)
-#         if not resume_text:
-#             st.warning(f"Could not extract text from {resume.name}.")
-#             continue
-#         st.session_state.parsed_data.append({
-#             "name": extract_name(resume_text),
-#             "email": get_email_addresses(resume_text),
-#             "phone": get_mobile_numbers(resume_text),
-#             "skills": extract_skills(resume_text),
-#             "experience": extract_experience(resume_text),
-#             "education": extract_education(resume_text),
-#             "location": extract_location(resume_text),
-#             "text": resume_text,  # Store text for ranking
-#             "score": None  # Placeholder for ranking
-#         })
-#     data = st.session_state.parsed_data
-
-# if data:
-#     st.subheader("📜 Parsed Resumes")
-#     for idx, res in enumerate(data):
-#         with st.container():
-#             st.markdown(f"### 📝 Resume {idx+1}: {res['name']}")
-#             st.write(f"📧 Email: {res['email']}")
-#             st.write(f"📞 Phone: {res['phone']}")
-#             st.write(f"📍 Location: {res['location']}")
-#             st.write(f"🎓 Education: {res['education']}")
-#             st.write(f"💼 Experience: {res['experience']}")
-#             st.write(f"🛠️ Skills: {', '.join(res['skills'])}")
-#             st.markdown("---")
-
-# if job_description and st.button("📊 Match & Rank"):
-#     job_desc_text = extract_text(job_description)
-#     if not job_desc_text:
-#         st.error("Could not extract text from the job description file.")
-#     else:
-#         ranked_results = []
-#         for res in data:
-#             if not res["text"]:
-#                 continue
-#             res["score"] = calculate_similarity(res["text"], job_desc_text)
-#             ranked_results.append(res)
-        
-#         sorted_results = sorted(ranked_results, key=lambda x: x["score"], reverse=True)
-#         st.subheader("🏆 Ranked Resumes")
-#         for idx, res in enumerate(sorted_results):
-#             with st.container():
-#                 st.markdown(f"### 🥇 Rank {idx+1}: {res['name']} - Score: {res['score']:.2f}")
-#                 st.write(f"📧 Email: {res['email']}")
-#                 st.write(f"📞 Phone: {res['phone']}")
-#                 st.write(f"📍 Location: {res['location']}")
-#                 st.write(f"🎓 Education: {res['education']}")
-#                 st.write(f"💼 Experience: {res['experience']}")
-#                 st.write(f"🛠️ Skills: {', '.join(res['skills'])}")
-#                 st.markdown("---")
-
-
-
+# ---------------------- IMPORTS AFTER DEPENDENCIES -------------------
 import re
 import json
 import spacy
@@ -172,61 +20,47 @@ from wordcloud import WordCloud
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from geopy.geocoders import Nominatim
-from fpdf import FPDF  # Ensure you have installed fpdf via pip install fpdf
+from fpdf import FPDF
+from docx import Document  # Added DOCX support
 
-# Load spaCy model for NER, similarity and embeddings
-# Replace the existing spaCy load line
+# ---------------------- SPA CY MODEL INITIALIZATION ------------------
+@st.cache_resource
+def load_nlp_model():
+    try:
+        nlp = spacy.load("en_core_web_md")
+    except OSError:
+        import subprocess
+        subprocess.run(["python", "-m", "spacy", "download", "en_core_web_md"])
+        nlp = spacy.load("en_core_web_md")
+    return nlp
 
+nlp = load_nlp_model()
 
+# ---------------------- GEOLOCATION CONFIGURATION --------------------
+geolocator = Nominatim(
+    user_agent="resume_parser_app_v2",
+    timeout=20,
+    domain="nominatim.openstreetmap.org"
+)
 
-import os
-import sys
-
-# Force install dependencies before anything else
-if "streamlit" in sys.modules:
-    os.system("pip install --upgrade pip")
-    os.system("pip install -r requirements.txt --force-reinstall")
-
-# Verify spaCy installation
-try:
-    import spacy
-except ImportError:
-    os.system("pip install spacy==3.7.4")
-    import spacy
-
-# Verify model installation
-try:
-    nlp = spacy.load("en_core_web_md")
-except OSError:
-    os.system("python -m spacy download en_core_web_md")
-    nlp = spacy.load("en_core_web_md")
-
-# import spacy
-
-# try:
-#     nlp = spacy.load("en_core_web_md")
-# except OSError:
-#     from spacy.cli import download
-#     download("en_core_web_md")
-#     nlp = spacy.load("en_core_web_md")
-geolocator = Nominatim(user_agent="resume_parser", timeout=10)
-
-# ------------------------- SKILLS LOADING CODE -------------------------
+# ------------------------- SKILLS LOADING CODE -----------------------
+@st.cache_data
 def load_skills():
     try:
-        with open("skills.json", "r", encoding="utf-8") as f:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        skills_path = os.path.join(current_dir, "skills.json")
+        
+        with open(skills_path, "r", encoding="utf-8") as f:
             skill_data = json.load(f)
             
-            # Flatten the nested structure
             flat_skills = []
             for category, subcategories in skill_data.items():
-                if isinstance(subcategories, dict):  # For nested categories like Non-Technical
+                if isinstance(subcategories, dict):
                     for subcat, skills in subcategories.items():
                         flat_skills.extend(skills)
                 else:
                     flat_skills.extend(subcategories)
             
-            # Add common variations
             variations = {
                 "NLP": ["Natural Language Processing"],
                 "CI/CD": ["Continuous Integration/Continuous Deployment"],
@@ -242,37 +76,226 @@ def load_skills():
                     expanded_skills.extend(variations[skill])
             
             return list(set(expanded_skills))
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        st.error(f"Error loading skills: {str(e)}")
+    except Exception as e:
+        st.error(f"Critical skills error: {str(e)}")
         return []
 
 skill_list = load_skills()
-
-# Initialize PhraseMatcher for skills extraction (case-insensitive)
 phrase_matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
 patterns = [nlp.make_doc(skill.lower()) for skill in skill_list]
 phrase_matcher.add("SKILLS", None, *patterns)
-# --------------------------------------------------------------------
 
-# --------------------- Improved Candidate Name Extraction ---------------------
+# --------------------- IMPROVED NAME EXTRACTION ---------------------
 def extract_candidate_name(text):
-    """
-    Try to extract candidate name using heuristics:
-    - Check the first 5 non-empty lines for a line containing at least two words.
-    - Prefer lines that are mostly alphabetic (ignoring phone numbers, emails, etc.).
-    """
     lines = [line.strip() for line in text.splitlines() if line.strip()]
+    
+    # Enhanced regex for international names
+    name_pattern = r"^[A-Za-zÀ-ÿ\-\.']+(?: [A-Za-zÀ-ÿ\-\.']+){1,3}$"
     for line in lines[:5]:
-        words = line.split()
-        if len(words) >= 2:
-            # Check if most characters are alphabetic
-            alpha_count = sum(c.isalpha() for c in line)
-            if alpha_count / len(line) > 0.5:
-                return line
-    return lines[0] if lines else "Unknown"
-# --------------------------------------------------------------------
+        if re.match(name_pattern, line):
+            return line.title()
+    
+    # NER fallback with prioritization
+    doc = nlp(text)
+    persons = [ent.text for ent in doc.ents if ent.label_ == "PERSON"]
+    return persons[0] if persons else lines[0] if lines else "Unknown"
 
-# --------------------- Section Extraction ---------------------
+# # --------------------- SECTION EXTRACTION ---------------------------
+# def extract_section(text, header):
+#     pattern = re.compile(
+#         rf'(?i){re.escape(header)}[\s:]*(.*?)(?=\n\s*[A-Z]{{3,}}|\Z)',
+#         re.DOTALL
+#     )
+#     match = pattern.search(text)
+#     return match.group(1).strip() if match else ""
+
+# # --------------------- RESUME PARSER CLASS --------------------------
+# class EnhancedResumeParser:
+#     def __init__(self):
+#         self.matcher = Matcher(nlp.vocab)
+#         self._add_patterns()
+        
+#     def _add_patterns(self):
+#         self.matcher.add("EDUCATION", [
+#             [{"LOWER": {"IN": ["bachelor", "master", "phd", "bs", "ms"]}}],
+#             [{"LOWER": "degree"}, {"LOWER": "in"}]
+#         ])
+        
+#         self.matcher.add("EXPERIENCE", [
+#             [{"ENT_TYPE": "DATE"}, {"LOWER": {"IN": ["years", "yrs"]}}]
+#         ])
+    
+#     def extract_experience(self, text):
+#         doc = nlp(text)
+#         experiences = re.findall(r'(\d+)\+? (?:years?|yrs?)', text, re.I)
+#         return f"{max(experiences, default=0)} years" if experiences else "Not specified"
+    
+#     def extract_education(self, text):
+#         doc = nlp(text)
+#         degrees = []
+#         for match_id, start, end in self.matcher(doc):
+#             if self.matcher.vocab.strings[match_id] == "EDUCATION":
+#                 degrees.append(doc[start:end].text)
+#         return degrees if degrees else ["Education not found"]
+    
+#     def extract_location(self, text):
+#         doc = nlp(text)
+#         locations = []
+#         for ent in doc.ents:
+#             if ent.label_ in ["GPE", "LOC"]:
+#                 try:
+#                     loc = geolocator.geocode(ent.text, exactly_one=True)
+#                     if loc:
+#                         locations.append(f"{ent.text} ({loc.latitude:.4f}, {loc.longitude:.4f})")
+#                     else:
+#                         locations.append(ent.text)
+#                 except Exception as e:
+#                     locations.append(ent.text)
+#         return ", ".join(list(set(locations))[:3]) if locations else "Not found"
+
+# # ---------------------- FILE EXTRACTION -----------------------------
+# def extract_text(file):
+#     try:
+#         if file.type == "application/pdf":
+#             with fitz.open(stream=file.read(), filetype="pdf") as doc:
+#                 return "\n".join([page.get_text("text") for page in doc])
+#         elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+#             doc = Document(file)
+#             return "\n".join([para.text for para in doc.paragraphs])
+#         else:
+#             return "Unsupported file format"
+#     except Exception as e:
+#         st.error(f"File error: {str(e)}")
+#         return ""
+
+# # ---------------------- REST OF YOUR ORIGINAL CODE ------------------
+# # [Keep all your existing code for summary extraction, matcher class, 
+# #  visualization functions, and main application logic exactly as is]
+
+# if __name__ == "__main__":
+#     main()
+
+
+
+
+
+
+
+
+
+# import re
+# import json
+# import spacy
+# import fitz
+# import streamlit as st
+# import pandas as pd
+# import matplotlib.pyplot as plt
+# from spacy.matcher import Matcher, PhraseMatcher
+# from wordcloud import WordCloud
+# from sklearn.feature_extraction.text import TfidfVectorizer
+# from sklearn.metrics.pairwise import cosine_similarity
+# from geopy.geocoders import Nominatim
+# from fpdf import FPDF  # Ensure you have installed fpdf via pip install fpdf
+
+# # Load spaCy model for NER, similarity and embeddings
+# # Replace the existing spaCy load line
+
+
+
+# import os
+# import sys
+
+# # Force install dependencies before anything else
+# if "streamlit" in sys.modules:
+#     os.system("pip install --upgrade pip")
+#     os.system("pip install -r requirements.txt --force-reinstall")
+
+# # Verify spaCy installation
+# try:
+#     import spacy
+# except ImportError:
+#     os.system("pip install spacy==3.7.4")
+#     import spacy
+
+# # Verify model installation
+# try:
+#     nlp = spacy.load("en_core_web_md")
+# except OSError:
+#     os.system("python -m spacy download en_core_web_md")
+#     nlp = spacy.load("en_core_web_md")
+
+# # import spacy
+
+# # try:
+# #     nlp = spacy.load("en_core_web_md")
+# # except OSError:
+# #     from spacy.cli import download
+# #     download("en_core_web_md")
+# #     nlp = spacy.load("en_core_web_md")
+# geolocator = Nominatim(user_agent="resume_parser", timeout=10)
+
+# # ------------------------- SKILLS LOADING CODE -------------------------
+# def load_skills():
+#     try:
+#         with open("skills.json", "r", encoding="utf-8") as f:
+#             skill_data = json.load(f)
+            
+#             # Flatten the nested structure
+#             flat_skills = []
+#             for category, subcategories in skill_data.items():
+#                 if isinstance(subcategories, dict):  # For nested categories like Non-Technical
+#                     for subcat, skills in subcategories.items():
+#                         flat_skills.extend(skills)
+#                 else:
+#                     flat_skills.extend(subcategories)
+            
+#             # Add common variations
+#             variations = {
+#                 "NLP": ["Natural Language Processing"],
+#                 "CI/CD": ["Continuous Integration/Continuous Deployment"],
+#                 "SEO": ["Search Engine Optimization"],
+#                 "AI": ["Artificial Intelligence"],
+#                 "ML": ["Machine Learning"]
+#             }
+            
+#             expanded_skills = []
+#             for skill in flat_skills:
+#                 expanded_skills.append(skill)
+#                 if skill in variations:
+#                     expanded_skills.extend(variations[skill])
+            
+#             return list(set(expanded_skills))
+#     except (FileNotFoundError, json.JSONDecodeError) as e:
+#         st.error(f"Error loading skills: {str(e)}")
+#         return []
+
+# skill_list = load_skills()
+
+# # Initialize PhraseMatcher for skills extraction (case-insensitive)
+# phrase_matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
+# patterns = [nlp.make_doc(skill.lower()) for skill in skill_list]
+# phrase_matcher.add("SKILLS", None, *patterns)
+# # --------------------------------------------------------------------
+
+# # --------------------- Improved Candidate Name Extraction ---------------------
+# def extract_candidate_name(text):
+#     """
+#     Try to extract candidate name using heuristics:
+#     - Check the first 5 non-empty lines for a line containing at least two words.
+#     - Prefer lines that are mostly alphabetic (ignoring phone numbers, emails, etc.).
+#     """
+#     lines = [line.strip() for line in text.splitlines() if line.strip()]
+#     for line in lines[:5]:
+#         words = line.split()
+#         if len(words) >= 2:
+#             # Check if most characters are alphabetic
+#             alpha_count = sum(c.isalpha() for c in line)
+#             if alpha_count / len(line) > 0.5:
+#                 return line
+#     return lines[0] if lines else "Unknown"
+# # --------------------------------------------------------------------
+
+# # --------------------- Section Extraction ---------------------
 def extract_section(text, header):
     """
     Extract text from a section that starts with a header (e.g., "TECHNICAL SKILLS")
