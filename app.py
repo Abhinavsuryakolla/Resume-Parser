@@ -107,7 +107,7 @@ def load_skills():
     except Exception as e:
         return [], str(e)
 
-# Define other functions
+# Define other functions with parameters for nlp and phrase_matcher
 def extract_text(file):
     try:
         if file.type == "application/pdf":
@@ -121,7 +121,7 @@ def extract_text(file):
     except Exception as e:
         return f"Error extracting text: {str(e)}"
 
-def extract_candidate_name(text):
+def extract_candidate_name(text, nlp):
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     name_pattern = r"^[A-Za-zÀ-ÿ\-\.']+(?: [A-Za-zÀ-ÿ\-\.']+){1,3}$"
     for line in lines[:5]:
@@ -139,10 +139,9 @@ def extract_section(text, header):
     match = pattern.search(text)
     return match.group(1).strip() if match else ""
 
-def extract_candidate_summary(resume_text):
-    name = extract_candidate_name(resume_text)
+def extract_candidate_summary(resume_text, nlp, parser):
+    name = extract_candidate_name(resume_text, nlp)
     tech_skills = extract_section(resume_text, "TECHNICAL SKILLS")
-    parser = EnhancedResumeParser(nlp)
     education = " ".join(parser.extract_education(resume_text))
     work_experience = extract_section(resume_text, "WORK EXPERIENCE")
     certifications = extract_section(resume_text, "CERTIFICATIONS")
@@ -155,7 +154,7 @@ def extract_candidate_summary(resume_text):
     summary = f"{name}. {tech_skills}. {education}. {work_experience}. {certifications}. {coding_profiles}"
     return summary
 
-def extract_skills(text):
+def extract_skills(text, nlp, phrase_matcher):
     doc = nlp(text.lower())
     matches = phrase_matcher(doc)
     detected_skills = set()
@@ -239,8 +238,8 @@ def main():
             parsed_results = []
             for resume in uploaded_resumes:
                 resume_text = extract_text(resume)
-                candidate_name = extract_candidate_name(resume_text)
-                skills_data = extract_skills(resume_text)
+                candidate_name = extract_candidate_name(resume_text, nlp)
+                skills_data = extract_skills(resume_text, nlp, phrase_matcher)
                 details = {
                     "Name": candidate_name,
                     "Experience": parser.extract_experience(resume_text),
@@ -253,7 +252,7 @@ def main():
                 st.subheader(candidate_name)
                 st.write(details)
                 st.write("**Candidate Summary:**")
-                st.write(extract_candidate_summary(resume_text))
+                st.write(extract_candidate_summary(resume_text, nlp, parser))
             st.success("Resume parsing complete.")
     
     if uploaded_resumes and job_description:
@@ -264,9 +263,9 @@ def main():
                 resume_text = extract_text(resume)
                 score = matcher.calculate_similarity(resume_text, job_desc_text)
                 if score >= min_score:
-                    skills_data = extract_skills(resume_text)
+                    skills_data = extract_skills(resume_text, nlp, phrase_matcher)
                     results.append({
-                        "name": extract_candidate_name(resume_text),
+                        "name": extract_candidate_name(resume_text, nlp),
                         "score": round(score, 2),
                         "experience": parser.extract_experience(resume_text),
                         "education": ", ".join(parser.extract_education(resume_text)),
@@ -293,8 +292,8 @@ def main():
                         st.write(f"**Categories:** {candidate['categories']}")
                         st.write(f"**Location:** {candidate['location']}")
                         
-                        candidate_skills = set(extract_skills(candidate['text'])["skills_list"])
-                        job_skills = set(extract_skills(job_desc_text)["skills_list"])
+                        candidate_skills = set(extract_skills(candidate['text'], nlp, phrase_matcher)["skills_list"])
+                        job_skills = set(extract_skills(job_desc_text, nlp, phrase_matcher)["skills_list"])
                         missing_skills = job_skills - candidate_skills
                         st.write("**Skill Gap Analysis:**")
                         if missing_skills:
@@ -310,7 +309,7 @@ def main():
                             plot_wordcloud(job_desc_text, "Job Description Keywords")
                 
                 st.subheader("🔍 Global Skill Gap Analysis")
-                global_job_skills = set(extract_skills(job_desc_text)["skills_list"])
+                global_job_skills = set(extract_skills(job_desc_text, nlp, phrase_matcher)["skills_list"])
                 all_resume_skills = set().union(*[set(r['skills'].split(", ")) for r in results])
                 global_missing = global_job_skills - all_resume_skills
                 if global_missing:
