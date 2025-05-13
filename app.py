@@ -16,7 +16,7 @@ from geopy.geocoders import Nominatim
 from fpdf import FPDF
 from docx import Document
 
-# Define classes first to avoid NameError
+# Define classes first
 class EnhancedResumeParser:
     def __init__(self, nlp):
         self.nlp = nlp
@@ -73,26 +73,15 @@ class AdvancedMatcher:
 @st.cache_resource
 def load_nlp_model():
     try:
-        return spacy.load("en_core_web_md")
+        return spacy.load("en_core_web_md"), None
     except Exception as e:
-        st.error(f"Failed to load spaCy model: {str(e)}. Ensure 'en_core_web_md' is in requirements.txt.")
-        return None
-
-nlp = load_nlp_model()
-if nlp is None:
-    st.stop()
-
-# Geolocation setup
-geolocator = Nominatim(user_agent="resume_parser_app_v2", timeout=20)
-
-# Verify skills.json exists
-if not os.path.exists("skills.json"):
-    st.error("skills.json not found. Please upload it to the app directory.")
-    st.stop()
+        return None, str(e)
 
 # Load skills with error handling
 @st.cache_data
 def load_skills():
+    if not os.path.exists("skills.json"):
+        return [], "skills.json not found. Please upload it to the app directory."
     try:
         with open("skills.json", "r", encoding="utf-8") as f:
             skill_data = json.load(f)
@@ -115,17 +104,18 @@ def load_skills():
                 expanded_skills.append(skill)
                 if skill in variations:
                     expanded_skills.extend(variations[skill])
-            return list(set(expanded_skills))
+            return list(set(expanded_skills)), None
     except Exception as e:
-        st.error(f"Critical skills error: {str(e)}")
-        return []
+        return [], str(e)
 
-skill_list = load_skills()
-phrase_matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
-patterns = [nlp.make_doc(skill.lower()) for skill in skill_list]
-phrase_matcher.add("SKILLS", None, *patterns)
+# Top-level assignments
+nlp, nlp_error = load_nlp_model()
+skill_list, skills_error = load_skills()
 
-# Function definitions
+# Geolocation setup
+geolocator = Nominatim(user_agent="resume_parser_app_v2", timeout=20)
+
+# Define other functions
 def extract_text(file):
     try:
         if file.type == "application/pdf":
@@ -137,8 +127,7 @@ def extract_text(file):
         else:
             return "Unsupported file format"
     except Exception as e:
-        st.error(f"File error: {str(e)}")
-        return ""
+        return f"Error extracting text: {str(e)}"
 
 def extract_candidate_name(text):
     lines = [line.strip() for line in text.splitlines() if line.strip()]
@@ -209,6 +198,25 @@ def generate_pdf_report(results):
 
 def main():
     st.set_page_config(page_title="AI Resume Analyst", layout="wide")
+    
+    if nlp_error:
+        st.error(f"Failed to load spaCy model: {nlp_error}")
+        st.stop()
+    
+    if skills_error:
+        st.error(f"Critical skills error: {skills_error}")
+        st.stop()
+    
+    # Create phrase_matcher
+    global phrase_matcher
+    phrase_matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
+    patterns = [nlp.make_doc(skill.lower()) for skill in skill_list]
+    phrase_matcher.add("SKILLS", None, *patterns)
+    
+    # Create parser and matcher
+    parser = EnhancedResumeParser(nlp)
+    matcher = AdvancedMatcher()
+    
     st.title("🚀 AI Resume Analyst 2.0")
     
     st.sidebar.header("⚙️ Analysis Settings")
@@ -225,9 +233,6 @@ def main():
         job_description = st.file_uploader("📑 Upload Job Description (for matching)", 
                                            type=["pdf", "docx"])
         min_score = st.slider("🔍 Minimum Match Score", 0.0, 1.0, 0.5)
-    
-    parser = EnhancedResumeParser(nlp)
-    matcher = AdvancedMatcher()
     
     if uploaded_resumes:
         if st.button("📄 Parse Resumes", key="parse_btn"):
