@@ -69,7 +69,7 @@ class AdvancedMatcher:
         tfidf_matrix = self.vectorizer.fit_transform([resume_text, job_desc_text])
         return cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
 
-# Load spaCy model with error handling
+# Cached functions for loading resources
 @st.cache_resource
 def load_nlp_model():
     try:
@@ -77,7 +77,6 @@ def load_nlp_model():
     except Exception as e:
         return None, str(e)
 
-# Load skills with error handling
 @st.cache_data
 def load_skills():
     if not os.path.exists("skills.json"):
@@ -107,13 +106,6 @@ def load_skills():
             return list(set(expanded_skills)), None
     except Exception as e:
         return [], str(e)
-
-# Top-level assignments
-nlp, nlp_error = load_nlp_model()
-skill_list, skills_error = load_skills()
-
-# Geolocation setup
-geolocator = Nominatim(user_agent="resume_parser_app_v2", timeout=20)
 
 # Define other functions
 def extract_text(file):
@@ -196,22 +188,29 @@ def generate_pdf_report(results):
         pdf.ln(5)
     return pdf.output(dest="S").encode("latin1")
 
+# Main function
 def main():
+    # Set page config as the FIRST Streamlit command
     st.set_page_config(page_title="AI Resume Analyst", layout="wide")
     
+    # Load resources AFTER setting page config
+    nlp, nlp_error = load_nlp_model()
     if nlp_error:
         st.error(f"Failed to load spaCy model: {nlp_error}")
         st.stop()
     
+    skill_list, skills_error = load_skills()
     if skills_error:
         st.error(f"Critical skills error: {skills_error}")
         st.stop()
     
-    # Create phrase_matcher
-    global phrase_matcher
+    # Initialize PhraseMatcher
     phrase_matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
     patterns = [nlp.make_doc(skill.lower()) for skill in skill_list]
     phrase_matcher.add("SKILLS", None, *patterns)
+    
+    # Geolocation setup
+    geolocator = Nominatim(user_agent="resume_parser_app_v2", timeout=20)
     
     # Create parser and matcher
     parser = EnhancedResumeParser(nlp)
